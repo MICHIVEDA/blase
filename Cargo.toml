@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 evdev = "0.13.2"
+rand = "0.10.3"
 x11rb = { version = "0.14.0", features = ["shape"] }
