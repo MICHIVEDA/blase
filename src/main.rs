@@ -2,6 +2,7 @@
 
 mod input;
 mod overlay;
+mod a11y;
 
 use std::{
     error::Error,
@@ -15,8 +16,9 @@ use x11rb::{
     protocol::xproto::{clear_area, ConnectionExt},
 };
 
-fn main() -> Result<(), Box<dyn Error>> {
-    
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    /*
     let touchpad = input::devices::find_tracking_devices(Some("CHERRY"))
         .into_iter()
         .next()
@@ -31,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     input::scroll::run_scroll(touchpad, scroll_device, held).expect("scroll loop failed");
     
-
+*/
     let (conn, screen_num) = overlay::window::connect()?;
     let window = overlay::window::create_window(&conn, screen_num)?;
     println!("overlay window: {:#x}", window);
@@ -53,4 +55,23 @@ fn main() -> Result<(), Box<dyn Error>> {
             last_pos = Some(pos);
         }
     }
+
+    let conn = atspi::AccessibilityConnection::new().await?;
+
+    let Some(frame) = a11y::get_active_window(&conn).await? else {
+	println!("no active frame");
+	return Ok(());
+    };
+
+    let targets = a11y::collect_targets(&conn, &frame).await?;
+
+    println!("{} targets", targets.len());
+    for target in &targets {
+        println!(
+            "{:?} at ({}, {}), size {}x{}",
+            target.role, target.x, target.y, target.width, target.height
+        );
+    }
+
+    Ok(())
 }

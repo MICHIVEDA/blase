@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+atspi = "0.30.0"
 evdev = "0.13.2"
 rand = "0.10.3"
+tokio = { version = "1.53.2", features = ["macros", "rt-multi-thread"] }
 x11rb = { version = "0.14.0", features = ["shape"] }
