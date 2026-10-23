@@ -1,9 +1,10 @@
-
 use std::error::Error;
+use std::time::Duration;
 
 use atspi::proxy::accessible::ObjectRefExt;
 use atspi::proxy::component::ComponentProxy;
 use atspi::{AccessibilityConnection, CoordType, ObjectRefOwned, Role, State};
+
 
 #[derive(Debug)]
 pub struct Target {
@@ -115,4 +116,36 @@ pub async fn collect_targets(conn: &AccessibilityConnection, frame: &ObjectRefOw
 	}
     }
     Ok(targets)
+}
+
+
+async fn scan() -> Result<(), Box<dyn Error>>{
+    let conn = atspi::AccessibilityConnection::new().await?;
+
+    loop {
+	match get_active_window(&conn).await {
+	    Ok(Some(frame)) => match collect_targets(&conn, &frame).await {
+		Ok(targets) => {
+		    println!("{} targets", targets.len());
+		    for target in &targets {
+			println!("{:?} at ({}, {}), size {}x{}", target.role, target.x, target.y, target.width, target.height);
+		    }
+		},
+		Err(e) => eprintln!("collecting targets failed {e}"),
+	    }
+	    Ok(None) => println!("no active frame"),
+	    Err(e) => eprintln!("finding active window failed {e}"),
+	}
+	tokio::time::sleep(Duration::from_secs(1)).await;
+	}
+}
+
+
+pub fn run() -> Result<(), Box<dyn Error>>{
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+
+    runtime.block_on(scan())
+    
 }

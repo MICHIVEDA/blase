@@ -1,8 +1,8 @@
 #![allow(unused)]
 
+mod a11y;
 mod input;
 mod overlay;
-mod a11y;
 
 use std::{
     error::Error,
@@ -11,13 +11,7 @@ use std::{
     time::Duration,
 };
 
-use x11rb::{
-    connection::Connection,
-    protocol::xproto::{clear_area, ConnectionExt},
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     /*
     let touchpad = input::devices::find_tracking_devices(Some("CHERRY"))
         .into_iter()
@@ -32,46 +26,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
     thread::spawn(move || input::trigger::watch_trigger_key(held_for_keyboard));
 
     input::scroll::run_scroll(touchpad, scroll_device, held).expect("scroll loop failed");
-    
-*/
-    let (conn, screen_num) = overlay::window::connect()?;
-    let window = overlay::window::create_window(&conn, screen_num)?;
-    println!("overlay window: {:#x}", window);
 
-    let gc_id = overlay::draw::create_graphic_context(&conn, window)?;
+     */
 
-    let mut last_pos = None;
+    // thread::sleep(Duration::from_secs(4));
 
-    loop {
-        let pos = overlay::pointer_pos::pointer_pos(&conn, window)?;
-
-        if last_pos != Some(pos) {
-            let (x, y) = pos;
-
-            conn.clear_area(false, window, 0, 0, 0, 0)?;
-            overlay::draw::draw_circle(&conn, window, gc_id, x, y, 40)?;
-
-            conn.flush()?;
-            last_pos = Some(pos);
+    let overlay_handle = thread::spawn(|| {
+        if let Err(e) = overlay::run::run() {
+            eprintln!("overlay error {e}");
         }
-    }
+    });
 
-    let conn = atspi::AccessibilityConnection::new().await?;
+    let a11y_handle = thread::spawn(|| {
+        if let Err(e) = a11y::run() {
+            eprintln!("a11y error {e}");
+        }
+    });
 
-    let Some(frame) = a11y::get_active_window(&conn).await? else {
-	println!("no active frame");
-	return Ok(());
-    };
-
-    let targets = a11y::collect_targets(&conn, &frame).await?;
-
-    println!("{} targets", targets.len());
-    for target in &targets {
-        println!(
-            "{:?} at ({}, {}), size {}x{}",
-            target.role, target.x, target.y, target.width, target.height
-        );
-    }
-
-    Ok(())
+    a11y_handle.join().expect("a11y");
+    overlay_handle.join().expect("overlay");
 }
