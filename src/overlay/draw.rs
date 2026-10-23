@@ -1,11 +1,9 @@
 use std::error::Error;
 
 use x11rb::{
-    connection::Connection,
-    protocol::xproto::{
-        Arc, ConnectionExt as _, CoordMode, CreateGCAux, Gcontext, Point, Screen, Window,
-    },
-    rust_connection::RustConnection,
+    connection::Connection, protocol::xproto::{
+        Arc, ConnectionExt as _, CoordMode, CreateGCAux, Gcontext, Point, Rectangle, Screen, Window, poly_rectangle,
+    }, rust_connection::RustConnection,
 };
 
 pub fn create_graphic_context(
@@ -16,7 +14,7 @@ pub fn create_graphic_context(
     conn.create_gc(
         gc_id,
         window,
-        &CreateGCAux::new().foreground(0xFFFF_0000).line_width(4),
+        &CreateGCAux::new().foreground(0xAF0F0000).line_width(4),
     )?
     .check()?;
 
@@ -40,8 +38,7 @@ pub fn draw_circle(
         angle2: 360 * 64,
     };
 
-    conn.poly_fill_arc(window, gc_id, &[circle])?.check()?;
+    conn.poly_fill_arc(window, gc_id, &[circle]);
 
-    conn.flush()?;
     Ok(())
 }

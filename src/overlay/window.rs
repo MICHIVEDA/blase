@@ -85,7 +85,7 @@ pub fn create_window(
             .colormap(colormap_id)
             .border_pixel(0)
             .override_redirect(1)
-            .background_pixel(0x00FF0AFA),
+            .background_pixel(0x00000000),
     )?
     .check()?;
 
